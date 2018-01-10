@@ -30,6 +30,10 @@ case "$1" in
 				json_get_var use_light "use_light"
 				json_get_var resolution "resolution"
 
+				if [ -z "$resolution" ];then
+				    resolution="640x480"
+				fi
+
 				pic="/tmp/snapshot-$(date +"%Y-%m-%d_%H%M%S").jpg"
 				if [ "${use_light}" = "1" ]; then
 					fast-gpio set-output ${LIGHT_GPIO} > /dev/null
