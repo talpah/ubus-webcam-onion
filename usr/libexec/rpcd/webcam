@@ -1,0 +1,47 @@
+#!/bin/sh
+#includes the functions that we need to parse JSON files
+. /usr/lib/onion/lib.sh
+
+LIGHT_GPIO=26
+
+case "$1" in
+
+    #The list function describes how to use the ubus functions.
+	list)
+		echo '{ "snapshot": { "use_light": "0", "resolution": "640x480" } }'
+	;;
+
+    #The call function describes the methods that are available
+	call)
+		case "$2" in
+			snapshot)
+				# pre-flight
+				has_fswebcam=$(which fswebcam)
+				if [ -z "$has_fswebcam" ]; then
+					echo "{ \"error\": \"fswebcam not installed. Do 'opkg update && opkg install fswebcam'\"}"
+					return
+				fi
+				# read the json arguments
+				read input;
+				Log "Json argument: $input"
+
+				# parse the json
+				json_load "$input"
+				json_get_var use_light "use_light"
+				json_get_var resolution "resolution"
+
+				pic="/tmp/snapshot-$(date +"%Y-%m-%d_%H%M%S").jpg"
+				if [ "${use_light}" = "1" ]; then
+					fast-gpio set-output ${LIGHT_GPIO} > /dev/null
+					fast-gpio set ${LIGHT_GPIO} 1 > /dev/null
+				fi
+				fswebcam --no-banner -r ${resolution} -D 1 "${pic}" > /dev/null
+				if [ "${use_light}" = "1" ]; then
+					fast-gpio set ${LIGHT_GPIO} 0 > /dev/null
+				fi
+				echo "{ \"path\": \"${pic}\"}"
+			;;
+
+		esac
+	;;
+esac
